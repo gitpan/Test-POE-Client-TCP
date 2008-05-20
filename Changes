@@ -1,5 +1,7 @@
 Test::POE::Client::TCP
 ======================
 
+0.04	Tue May 20 18:02:45 BST 2008
+	- added server_info() method.
 0.02	
 	- Initial CPAN release

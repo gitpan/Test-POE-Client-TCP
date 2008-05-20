@@ -7,7 +7,7 @@ use Socket;
 use Carp qw(carp croak);
 use vars qw($VERSION);
 
-$VERSION = '0.02';
+$VERSION = '0.04';
 
 sub spawn {
   my $package = shift;
@@ -46,6 +46,14 @@ sub session_id {
 sub shutdown {
   my $self = shift;
   $poe_kernel->call( $self->{session_id}, 'shutdown' );
+}
+
+sub server_info {
+  my $self = shift;
+  return unless $self->{_server_info};
+  my @vals = @{ $self->{_server_info} };
+  return @vals if wantarray;
+  return { map { $_ => shift @vals } qw(peeraddr peerport sockaddr sockport) };
 }
 
 sub connect {
@@ -146,6 +154,8 @@ sub _socket_up {
     FlushedEvent => '_conn_flushed',
   );
 
+  $self->{_server_info} = [ $peeraddr, $peerport, $sockaddr, $sockport ];
+
   $self->_send_event( $self->{_prefix} . 'connected', $peeraddr, $peerport, $sockaddr, $sockport );
   return;
 }
@@ -244,6 +254,7 @@ sub _terminate {
   my ($kernel,$self) = @_[KERNEL,OBJECT];
   return unless $self->{socket};
   delete $self->{socket};
+  delete $self->{_server_info};
   $self->_send_event( $self->{_prefix} . 'disconnected' );
   return 1;
 }
@@ -258,6 +269,7 @@ sub _conn_error {
   my ($self,$errstr,$id) = @_[OBJECT,ARG2,ARG3];
   return unless $self->{socket};
   delete $self->{socket};
+  delete $self->{_server_info};
   $self->_send_event( $self->{_prefix} . 'disconnected' );
   return;
 }
@@ -280,6 +292,7 @@ sub _conn_flushed {
     return;
   }
   delete $self->{socket};
+  delete $self->{_server_info};
   $self->_send_event( $self->{_prefix} . 'disconnected' );
   return;
 }
@@ -288,6 +301,7 @@ sub _shutdown {
   my ($kernel,$self) = @_[KERNEL,OBJECT];
   delete $self->{factory};
   delete $self->{socket};
+  delete $self->{_server_info};
   $kernel->alarm_remove_all();
   $kernel->alias_remove( $_ ) for $kernel->alias_list();
   $kernel->refcount_decrement( $self->{session_id} => __PACKAGE__ ) unless $self->{alias};
@@ -600,6 +614,17 @@ Returns the POE::Session ID of the component.
 =item shutdown
 
 Terminates the component. It will terminate any pending connects or connections.
+
+=item server_info
+
+Retrieves socket information about the current connection. In a list context it returns a list consisting of, in order,
+the server address, the server TCP port, our address and our TCP port. In a scalar context it returns a HASHREF
+with the following keys:
+
+  'peeraddr', the server address;
+  'peerport', the server TCP port;
+  'sockaddr', our address;
+  'sockport', our TCP port;
 
 =item send_to_server
 
