@@ -7,7 +7,7 @@ use Socket;
 use Carp qw(carp croak);
 use vars qw($VERSION);
 
-$VERSION = '0.06';
+$VERSION = '0.08';
 
 sub spawn {
   my $package = shift;
@@ -20,7 +20,9 @@ sub spawn {
      return;
   }
   my $self = bless \%opts, $package;
-  $self->{_prefix} = 'testc_';
+  $self->{_prefix} = delete $self->{prefix};
+  $self->{_prefix} = 'testc_' unless defined $self->{_prefix};
+  $self->{_prefix} .= '_' unless $self->{_prefix} =~ /\_$/;
   $self->{session_id} = POE::Session->create(
 	object_states => [
 	   $self => { shutdown       => '_shutdown',
@@ -566,7 +568,7 @@ flushed output and input from the specified server.
 
 =over 
 
-=item spawn
+=item C<spawn>
 
 Takes a number of optional arguments:
 
@@ -580,6 +582,7 @@ Takes a number of optional arguments:
   'localaddr', specify that connections be made from a particular local address;
   'localport', specify that connections be made from a particular port;
   'autoconnect', set to a true value to make the poco connect immediately;
+  'prefix', specify an event prefix other than the default of 'testc';
 
 The semantics for C<filter>, C<inputfilter> and C<outputfilter> are the same as for L<POE::Component::Server::TCP> in that one
 may provide either a C<SCALAR>, C<ARRAYREF> or an C<OBJECT>.
@@ -596,7 +599,7 @@ C<autoconnect> is specified, C<address> and C<port> must also be defined.
 
 =over
 
-=item connect
+=item C<connect>
 
 Initiates a connection to the given server. Takes a number of parameters:
 
@@ -607,15 +610,15 @@ Initiates a connection to the given server. Takes a number of parameters:
 
 C<address> and C<port> are optional if they have been already specified during C<spawn>.
 
-=item session_id
+=item C<session_id>
 
 Returns the POE::Session ID of the component.
 
-=item shutdown
+=item C<shutdown>
 
 Terminates the component. It will terminate any pending connects or connections.
 
-=item server_info
+=item C<server_info>
 
 Retrieves socket information about the current connection. In a list context it returns a list consisting of, in order,
 the server address, the server TCP port, our address and our TCP port. In a scalar context it returns a HASHREF
@@ -626,18 +629,18 @@ with the following keys:
   'sockaddr', our address;
   'sockport', our TCP port;
 
-=item send_to_server
+=item C<send_to_server>
 
 Send some output to the connected server. The first parameter is a string of text to send. This parameter may also be 
 an arrayref of items to send to the client. If the filter you have used requires an arrayref as
 input, nest that arrayref within another arrayref.
 
-=item disconnect
+=item C<disconnect>
 
 Places the server connection into pending disconnect state. Set this, then send an applicable message to the server 
 using C<send_to_server()> and the server connection will be terminated.
 
-=item terminate
+=item C<terminate>
 
 Immediately disconnects a server conenction.
 
@@ -649,17 +652,17 @@ These are events that the component will accept:
 
 =over
 
-=item register
+=item C<register>
 
 Takes N arguments: a list of event names that your session wants to listen for, minus the 'testc_' prefix.
 
 Registering for 'all' will cause it to send all TESTC-related events to you; this is the easiest way to handle it.
 
-=item unregister
+=item C<unregister>
 
 Takes N arguments: a list of event names which you don't want to receive. If you've previously done a 'register' for a particular event which you no longer care about, this event will tell the poco to stop sending them to you. (If you haven't, it just ignores you. No big deal).
 
-=item connect
+=item C<connect>
 
 Initiates a connection to the given server. Takes a number of parameters:
 
@@ -670,22 +673,22 @@ Initiates a connection to the given server. Takes a number of parameters:
 
 C<address> and C<port> are optional if they have been already specified during C<spawn>.
 
-=item shutdown
+=item C<shutdown>
 
 Terminates the component. It will terminate any pending connects or connections.
 
-=item send_to_server
+=item C<send_to_server>
 
 Send some output to the connected server. The first parameter is a string of text to send. This parameter may also be 
 an arrayref of items to send to the client. If the filter you have used requires an arrayref as
 input, nest that arrayref within another arrayref.
 
-=item disconnect
+=item C<disconnect>
 
 Places the server connection into pending disconnect state. Set this, then send an applicable message to the server 
 using C<send_to_server()> and the server connection will be terminated.
 
-=item terminate
+=item C<terminate>
 
 Immediately disconnects a server conenction.
 
@@ -693,34 +696,35 @@ Immediately disconnects a server conenction.
 
 =head1 OUTPUT EVENTS
 
-The component sends the following events to registered sessions:
+The component sends the following events to registered sessions. If you have changed the C<prefix> option in C<spawn> then
+substitute C<testc> with the event prefix that you specified.
 
 =over
 
-=item testc_registered
+=item C<testc_registered>
 
 This event is sent to a registering session. ARG0 is the Test::POE::Client::TCP object.
 
-=item testd_socket_failed
+=item C<testc_socket_failed>
 
 Generated if the component cannot make a socket connection. 
 ARG0 contains the name of the operation that failed. 
 ARG1 and ARG2 hold numeric and string values for $!, respectively.
 
-=item testc_connected
+=item C<testc_connected>
 
 Generated whenever a connection is established. ARG0 is the server's IP address, ARG1 is the server's TCP port.
 ARG3 is our IP address and ARG4 is our socket port.
 
-=item testc_disconnected
+=item C<testc_disconnected>
 
 Generated whenever we disconnect from the server.
 
-=item testc_input
+=item C<testc_input>
 
 Generated whenever the server sends us some traffic. ARG0 is the data sent ( tokenised by whatever POE::Filter you specified ).
 
-=item testc_flushed
+=item C<testc_flushed>
 
 Generated whenever anything we send to the server is actually flushed down the 'line'.
 

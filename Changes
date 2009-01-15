@@ -1,6 +1,9 @@
 Test::POE::Client::TCP
 ======================
 
+0.08	Thu Jan 15 10:33:50 GMT 2009
+	- Enabled event 'prefix' to be specified.
+
 0.06	Tue Jul  1 10:28:19 BST 2008
 	- Managed to delete distro from CPAN, restoring.
 
