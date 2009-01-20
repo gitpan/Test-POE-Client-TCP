@@ -7,7 +7,7 @@ use Socket;
 use Carp qw(carp croak);
 use vars qw($VERSION);
 
-$VERSION = '0.08';
+$VERSION = '0.10';
 
 sub spawn {
   my $package = shift;
@@ -61,6 +61,12 @@ sub server_info {
 sub connect {
   my $self = shift;
   $poe_kernel->call( $self->{session_id}, 'connect' );
+}
+
+sub wheel {
+  my $self = shift;
+  return unless $self->{socket};
+  return $self->{socket};
 }
 
 sub _start {
@@ -229,7 +235,7 @@ sub _test_filter {
 
 sub _socket_fail {
   my ($kernel,$self,$operation,$errnum,$errstr,$wheel_id) = @_[KERNEL,OBJECT,ARG0..ARG3];
-  carp "Wheel $wheel_id generated $operation error $errnum: $errstr\n";
+  carp "Wheel $wheel_id generated $operation error $errnum: $errstr\n" if $self->{debug};
   delete $self->{factory};
   $self->_send_event( $self->{_prefix} . 'socket_failed', $operation, $errnum, $errstr );
   return;
@@ -643,6 +649,11 @@ using C<send_to_server()> and the server connection will be terminated.
 =item C<terminate>
 
 Immediately disconnects a server conenction.
+
+=item C<wheel>
+
+Returns the underlying L<POE::Wheel::ReadWrite> object if we are currently connected to a server, C<undef> otherwise.
+You can use this method to call methods on the wheel object to switch filters, etc. Exercise caution.
 
 =back
 

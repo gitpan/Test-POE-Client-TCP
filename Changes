@@ -1,6 +1,9 @@
 Test::POE::Client::TCP
 ======================
 
+0.10	Tue Jan 20 12:27:34 GMT 2009
+	- Added 'wheel' method to get the POE::Wheel::ReadWrite object.
+
 0.08	Thu Jan 15 10:33:50 GMT 2009
 	- Enabled event 'prefix' to be specified.
 

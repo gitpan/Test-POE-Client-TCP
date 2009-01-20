@@ -1,6 +1,6 @@
 use strict;
 use Socket;
-use Test::More tests => 10;
+use Test::More tests => 11;
 use POE qw(Wheel::SocketFactory Wheel::ReadWrite Filter::Line);
 use_ok('Test::POE::Client::TCP');
 
@@ -83,6 +83,7 @@ sub testc_registered {
 sub testc_connected {
   my ($kernel,$sender) = @_[KERNEL,SENDER];
   pass($_[STATE]);
+  isa_ok( $_[HEAP]->{testc}->wheel, 'POE::Wheel::ReadWrite' );
   $kernel->post( $sender, 'send_to_server', 'Hello, is it me you are looking for?' );
   return;
 }
