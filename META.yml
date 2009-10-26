@@ -23,9 +23,9 @@ no_index:
 provides:
   Test::POE::Client::TCP:
     file: lib/Test/POE/Client/TCP.pm
-    version: 1.04
+    version: 1.06
 requires:
-  POE: 1.004
+  POE: 1.28
   POE::Filter: 0
   POE::Filter::Line: 0
   POE::Wheel::ReadWrite: 0
@@ -35,4 +35,4 @@ resources:
   homepage: http://github.com/bingos/test-poe-client-tcp/tree
   license: http://dev.perl.org/licenses/
   repository: git://github.com/bingos/test-poe-client-tcp.git
-version: 1.04
+version: 1.06
