@@ -2,6 +2,9 @@ NAME
     Test::POE::Client::TCP - A POE Component providing TCP client services
     for test cases
 
+VERSION
+    version 1.12
+
 SYNOPSIS
       use strict;
       use Socket;
@@ -148,6 +151,7 @@ CONSTRUCTOR
           'localport', specify that connections be made from a particular port;
           'autoconnect', set to a true value to make the poco connect immediately;
           'prefix', specify an event prefix other than the default of 'testc';
+          'timeout', specify number of seconds to wait for socket timeouts;
 
         The semantics for "filter", "inputfilter" and "outputfilter" are the
         same as for POE::Component::Server::TCP in that one may provide
@@ -292,22 +296,22 @@ OUTPUT EVENTS
         Generated whenever anything we send to the server is actually
         flushed down the 'line'.
 
-AUTHOR
-    Chris "BinGOs" Williams <chris@bingosnet.co.uk>
-
-    with code borrowed from POE::Component::Server::TCP by Rocco Caputo, Ann
-    Barcomb and Jos Boumans.
-
-LICENSE
-    Copyright "(c)" Chris Williams, Rocco Caputo, Ann Barcomb and Jos
-    Boumans.
-
-    This module may be used, modified, and distributed under the same terms
-    as Perl itself. Please see the license that came with your Perl
-    distribution for details.
+KUDOS
+    Contains code borrowed from POE::Component::Server::TCP by Rocco Caputo,
+    Ann Barcomb and Jos Boumans.
 
 SEE ALSO
     POE
 
     POE::Component::Server::TCP
+
+AUTHOR
+    Chris Williams <chris@bingosnet.co.uk>
+
+COPYRIGHT AND LICENSE
+    This software is copyright (c) 2013 by Chris Williams, Rocco Caputo, Ann
+    Barcomb and Jos Boumans.
+
+    This is free software; you can redistribute it and/or modify it under
+    the same terms as the Perl 5 programming language system itself.
 

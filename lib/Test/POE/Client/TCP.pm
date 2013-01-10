@@ -1,13 +1,16 @@
 package Test::POE::Client::TCP;
+{
+  $Test::POE::Client::TCP::VERSION = '1.12';
+}
+
+#ABSTRACT: A POE Component providing TCP client services for test cases
 
 use strict;
 use warnings;
 use POE qw(Wheel::SocketFactory Wheel::ReadWrite Filter::Line);
+use POSIX qw[ETIMEDOUT];
 use Socket;
 use Carp qw(carp croak);
-use vars qw($VERSION);
-
-$VERSION = '1.10';
 
 sub spawn {
   my $package = shift;
@@ -19,6 +22,7 @@ sub spawn {
      carp "You must provide both 'address' and 'port' parameters when specifying 'autoconnect'\n";
      return;
   }
+  delete $opts{timeout} unless $opts{timeout} and $opts{timeout} =~ m!^\d+$!;
   my $self = bless \%opts, $package;
   $self->{_prefix} = delete $self->{prefix};
   $self->{_prefix} = 'testc_' unless defined $self->{_prefix};
@@ -31,6 +35,7 @@ sub spawn {
 		      disconnect     => '_disconnect',
 		      terminate      => '_terminate',
 		      connect	     => '_connect',
+          _timeout     => '_socket_fail',
 	            },
 	   $self => [ qw(_start register unregister _socket_up _socket_fail _conn_input _conn_error _conn_flushed _send_to_server __send_event _disconnect) ],
 	],
@@ -141,6 +146,7 @@ sub _connect {
     Reuse          => 'yes',               # Lets the port be reused
   );
 
+  $kernel->delay( '_timeout', $self->{timeout}, 'connect', ETIMEDOUT, POSIX::strerror( ETIMEDOUT ) ) if $self->{timeout};
   return;
 }
 
@@ -149,6 +155,7 @@ sub _socket_up {
   my $sockaddr = inet_ntoa( ( unpack_sockaddr_in ( CORE::getsockname $socket ) )[1] );
   my $sockport = ( unpack_sockaddr_in ( CORE::getsockname $socket ) )[0];
   $peeraddr = inet_ntoa( $peeraddr );
+  $kernel->delay( '_timeout' );
 
   delete $self->{factory};
 
@@ -238,6 +245,7 @@ sub _test_filter {
 sub _socket_fail {
   my ($kernel,$self,$operation,$errnum,$errstr,$wheel_id) = @_[KERNEL,OBJECT,ARG0..ARG3];
   carp "Wheel $wheel_id generated $operation error $errnum: $errstr\n" if $self->{debug};
+  $kernel->delay( '_timeout' );
   delete $self->{factory};
   $self->_send_event( $self->{_prefix} . 'socket_failed', $operation, $errnum, $errstr );
   return;
@@ -441,9 +449,15 @@ q{Putting the test into POE};
 
 __END__
 
+=pod
+
 =head1 NAME
 
 Test::POE::Client::TCP - A POE Component providing TCP client services for test cases
+
+=head1 VERSION
+
+version 1.12
 
 =head1 SYNOPSIS
 
@@ -595,6 +609,7 @@ Takes a number of optional arguments:
   'localport', specify that connections be made from a particular port;
   'autoconnect', set to a true value to make the poco connect immediately;
   'prefix', specify an event prefix other than the default of 'testc';
+  'timeout', specify number of seconds to wait for socket timeouts;
 
 The semantics for C<filter>, C<inputfilter> and C<outputfilter> are the same as for L<POE::Component::Server::TCP> in that one
 may provide either a C<SCALAR>, C<ARRAYREF> or an C<OBJECT>.
@@ -751,22 +766,25 @@ Generated whenever anything we send to the server is actually flushed down the '
 
 =back
 
-=head1 AUTHOR
+=head1 KUDOS
 
-Chris C<BinGOs> Williams <chris@bingosnet.co.uk>
-
-with code borrowed from L<POE::Component::Server::TCP> by Rocco Caputo, Ann Barcomb and Jos Boumans.
-
-=head1 LICENSE
-
-Copyright C<(c)> Chris Williams, Rocco Caputo, Ann Barcomb and Jos Boumans.
-
-This module may be used, modified, and distributed under the same terms as Perl itself. Please see the license that came with your Perl distribution for details.
+Contains code borrowed from L<POE::Component::Server::TCP> by Rocco Caputo, Ann Barcomb and Jos Boumans.
 
 =head1 SEE ALSO
 
 L<POE>
 
 L<POE::Component::Server::TCP>
+
+=head1 AUTHOR
+
+Chris Williams <chris@bingosnet.co.uk>
+
+=head1 COPYRIGHT AND LICENSE
+
+This software is copyright (c) 2013 by Chris Williams, Rocco Caputo, Ann Barcomb and Jos Boumans.
+
+This is free software; you can redistribute it and/or modify it under
+the same terms as the Perl 5 programming language system itself.
 
 =cut
